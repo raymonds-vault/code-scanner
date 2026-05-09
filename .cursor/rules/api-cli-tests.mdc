@@ -1,0 +1,39 @@
+---
+description: Add tests and run pytest when changing API, WebSocket, or CLI/terminal code
+alwaysApply: true
+---
+
+# API, WebSocket, and CLI — tests required
+
+When your edits touch **any** of the following, you **must** extend automated tests and **run** them before considering the work done:
+
+## In scope
+
+- **HTTP API:** `app/controllers/`, `app/schemas/` (request/response models), routes, status codes, validation errors.
+- **WebSocket / streaming:** scan stream events, payloads, lifecycle.
+- **API-adjacent orchestration:** `app/services/scan_service.py`, `app/services/scan_events.py`, or anything that changes behavior visible to clients.
+- **CLI / terminal:** `cli/` (TypeScript client), or executable `scripts/*.sh` when behavior or contracts change.
+
+## What to do
+
+1. **Add or update tests** under `tests/`:
+   - Prefer **focused unit tests** for pure logic (validation, risk, redaction, parsing).
+   - Use **integration-style tests** with the FastAPI app / DB setup from `tests/conftest.py` for new endpoints, WebSocket smoke checks, or full scan flows.
+   - Cover happy path and at least one failure or edge case when behavior is non-trivial.
+2. **Run the suite** from the repo root (execute yourself, do not only suggest commands):
+
+   ```bash
+   python3 -m pytest tests/ -v
+   ```
+
+   If only a subset is relevant, run the narrowest path that still covers your change, then run full `tests/` if you touched shared code.
+3. **CLI (TypeScript):** after `cli/` changes, run `npm run build` in `cli/` to ensure the client still compiles. Add or extend tests if the project already has a test script; otherwise note the gap in the changelog only when the user asked for CLI tests explicitly.
+
+## When tests are optional
+
+- Comment-only or typo fixes in docs/rules with **no** code path change.
+- Refactors proven behavior-identical and existing tests already cover the same surface (still run pytest to confirm).
+
+## If pytest fails
+
+Fix the implementation or the test; do not merge or finish the task with a red suite.

@@ -1,0 +1,32 @@
+---
+description: After substantive edits, add changelogs/vX.Y.Z.md and bump version.properties
+alwaysApply: true
+---
+
+# Changelog and version (mandatory after substantive work)
+
+When you finish a **coherent batch of changes** to this repo (features, fixes, refactors that affect behavior or public contracts), you **must** do both:
+
+## 1. Changelog file
+
+- Path: `changelogs/v<VERSION>.md` where `<VERSION>` matches the **new** semver after the bump (e.g. `changelogs/v0.1.2.md`).
+- Include:
+  - **Summary** of what changed.
+  - **Areas / files touched** (high level).
+  - **Rationale** (why), especially for security or architecture decisions.
+- **Never** overwrite older changelog files; only add a new version file.
+
+## 2. Version bump
+
+- Edit repo-root `version.properties` and set `version=<VERSION>` to the same value as the new changelog (e.g. `version=0.1.2`).
+- Prefer **patch** for small fixes/additions, **minor** for new subsystems or API changes, **major** for breaking changes.
+
+## Semver hint
+
+- Same session / same user request: usually one bump at the end.
+- Trivial-only edits (typo in comments, formatting): optional skip unless the user asked for a release note.
+
+## Reference
+
+- Human-readable workflow: run `./scripts/agent_changelog_workflow.sh`
+- Historical format: see existing files under `changelogs/`.
