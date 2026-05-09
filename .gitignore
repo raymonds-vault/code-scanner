@@ -6,3 +6,5 @@ __pycache__/
 *.db
 cli/node_modules/
 cli/dist/
+changelogs/
+.cursor/
