@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     MAX_CONCURRENCY: int = 4
     SCAN_MODE: str = "local_only"
 
+    GOOGLE_CLIENT_ID: str = ""
+    JWT_SECRET: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_DAYS: int = 7
+
 
 @lru_cache
 def get_settings() -> Settings:

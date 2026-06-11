@@ -3,14 +3,16 @@
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_optional_user, require_user
 from app.core.database import AsyncSessionLocal
-from app.core.exceptions import NotFoundException
 from app.core.dependencies import get_db
+from app.core.exceptions import NotFoundException
 from app.repositories import scan_repo
 from app.schemas.scan import (
     FindingOut,
     ScanCreatedResponse,
     ScanDetailResponse,
+    ScanListResponse,
     ScanRequest,
 )
 from app.services.scan_events import broker
@@ -19,8 +21,25 @@ from app.services.scan_service import persist_scan_request, schedule_scan_analys
 router = APIRouter(tags=["Scan"], prefix="/scan")
 
 
+@router.get("s", response_model=ScanListResponse)
+async def list_scans(
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_user),
+) -> ScanListResponse:
+    scans, total = await scan_repo.list_scans_by_user(
+        db, current_user["sub"], limit=limit, offset=offset
+    )
+    return ScanListResponse(scans=scans, total=total)
+
+
 @router.post("", response_model=ScanCreatedResponse)
-async def create_scan(body: ScanRequest) -> ScanCreatedResponse:
+async def create_scan(
+    body: ScanRequest,
+    current_user: dict | None = Depends(get_optional_user),
+) -> ScanCreatedResponse:
+    user_id = current_user["sub"] if current_user else None
     meta = body.metadata.model_dump()
     tuples = [
         (
@@ -41,6 +60,7 @@ async def create_scan(body: ScanRequest) -> ScanCreatedResponse:
             client_request_id=body.client_request_id,
             metadata=meta,
             chunks=tuples,
+            user_id=user_id,
         )
         await session.commit()
     schedule_scan_analysis(scan_id)

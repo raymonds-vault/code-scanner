@@ -1,5 +1,7 @@
 """RAG context retrieval from Pinecone."""
 
+import asyncio
+
 from app.core.pinecone_core import get_pinecone_index
 from app.services.analysis.embedding_service import embed_one
 from app.services.analysis.types import ContextBundleDict
@@ -14,7 +16,7 @@ def _empty_bundle() -> ContextBundleDict:
     }
 
 
-def retrieve_for_chunk(
+async def retrieve_for_chunk(
     redacted_code: str,
     *,
     signal_category: str | None = None,
@@ -27,9 +29,14 @@ def retrieve_for_chunk(
     except RuntimeError:
         return _empty_bundle()
 
-    qv = embed_one(redacted_code[:8000])
+    qv = await asyncio.to_thread(embed_one, redacted_code[:8000])
     try:
-        hits = search_guidelines(qv, limit=top_k, category_filter=signal_category)
+        hits = await asyncio.to_thread(
+            search_guidelines,
+            qv,
+            limit=top_k,
+            category_filter=signal_category,
+        )
     except RuntimeError:
         return _empty_bundle()
     docs = [h["text"] for h in hits if h.get("text")]

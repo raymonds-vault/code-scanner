@@ -49,6 +49,21 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./scripts:/app/scripts
+
+  ui:
+    build: ./ui
+    ports:
+      - "5173:5173"
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      - api
+    volumes:
+      - ./ui/src:/app/src
 
 volumes:
   code_scanner_pg:

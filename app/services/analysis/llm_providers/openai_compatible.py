@@ -12,7 +12,7 @@ from app.services.analysis.llm_providers.common import (
 from app.services.analysis.types import ContextBundleDict, LlmDraftDict, StaticSignalDict
 
 
-def _chat_refine(
+async def _chat_refine(
     *,
     provider_name: str,
     api_key: str,
@@ -42,9 +42,10 @@ def _chat_refine(
         "response_format": {"type": "json_object"},
     }
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    timeout = httpx.Timeout(connect=10.0, read=45.0, write=30.0, pool=10.0)
     try:
-        with httpx.Client(timeout=120.0) as client:
-            resp = client.post(url, headers=headers, json=payload)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
     except Exception as exc:
@@ -61,14 +62,14 @@ def _chat_refine(
     return draft_from_raw(chunk_id, raw, signals)
 
 
-def refine_openai(
+async def refine_openai(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],
     context: ContextBundleDict,
 ) -> LlmDraftDict:
     settings = get_settings()
-    return _chat_refine(
+    return await _chat_refine(
         provider_name="OpenAI",
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
@@ -80,14 +81,14 @@ def refine_openai(
     )
 
 
-def refine_groq(
+async def refine_groq(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],
     context: ContextBundleDict,
 ) -> LlmDraftDict:
     settings = get_settings()
-    return _chat_refine(
+    return await _chat_refine(
         provider_name="Groq",
         api_key=settings.GROQ_API_KEY,
         base_url=settings.GROQ_BASE_URL,

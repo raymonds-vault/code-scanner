@@ -1,6 +1,7 @@
 """Provider routing for LLM refinement."""
 
-from collections.abc import Callable
+import asyncio
+from collections.abc import Awaitable, Callable
 
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
@@ -17,16 +18,33 @@ logger = get_logger(__name__)
 
 ProviderFn = Callable[
     [str, str, list[StaticSignalDict], ContextBundleDict],
-    LlmDraftDict,
+    Awaitable[LlmDraftDict],
 ]
+
+def _refine_transformers_async(
+    chunk_id: str,
+    redacted_code: str,
+    signals: list[StaticSignalDict],
+    context: ContextBundleDict,
+) -> Awaitable[LlmDraftDict]:
+    return asyncio.to_thread(refine_transformers, chunk_id, redacted_code, signals, context)
+
 
 PROVIDERS: dict[str, ProviderFn] = {
     "stub": stub.refine,
     "hf_inference": refine_inference,
-    "transformers": refine_transformers,
+    "transformers": _refine_transformers_async,
     "groq": refine_groq,
     "openai": refine_openai,
 }
+
+
+def _with_fallback_note(draft: LlmDraftDict) -> LlmDraftDict:
+    explanation = str(draft.get("explanation", "")).strip()
+    suffix = "Provider fallback was applied due to upstream model availability."
+    draft["explanation"] = f"{explanation} {suffix}".strip()
+    draft["provider_fallback"] = True
+    return draft
 
 
 def _fallback_order(settings: Settings) -> list[str]:
@@ -64,26 +82,28 @@ def candidates_for_settings(settings: Settings | None = None) -> list[str]:
     return _routed_candidates(settings)
 
 
-def refine_with_router(
+async def refine_with_router(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],
     context: ContextBundleDict,
 ) -> LlmDraftDict:
-    errors: list[str] = []
+    had_provider_fallback = False
     for provider in candidates_for_settings():
         try:
-            draft = PROVIDERS[provider](chunk_id, redacted_code, signals, context)
+            draft = await PROVIDERS[provider](chunk_id, redacted_code, signals, context)
             draft["provider"] = provider
+            if had_provider_fallback:
+                _with_fallback_note(draft)
             return draft
         except ProviderError as exc:
-            errors.append(f"{provider}: {exc}")
+            had_provider_fallback = True
             logger.warning("LLM provider %s failed for chunk %s: %s", provider, chunk_id, exc)
-        except Exception as exc:
-            errors.append(f"{provider}: {exc}")
+        except Exception:
+            had_provider_fallback = True
             logger.exception("Unexpected LLM provider failure for chunk %s", chunk_id)
-    draft = stub.refine(chunk_id, redacted_code, signals, context)
+    draft = await stub.refine(chunk_id, redacted_code, signals, context)
     draft["provider"] = "stub"
-    if errors:
-        draft["explanation"] = f"{draft.get('explanation', '')} Provider fallback: {'; '.join(errors)}"
+    if had_provider_fallback:
+        _with_fallback_note(draft)
     return draft

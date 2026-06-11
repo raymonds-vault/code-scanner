@@ -2,6 +2,22 @@
 
 from app.services.analysis.types import FindingDict, LlmDraftDict, StaticSignalDict
 
+_STATIC_SEVERITY_BY_TYPE = {
+    "sql_injection": "high",
+    "command_exec": "high",
+    "path_traversal": "medium",
+}
+_VALID_SEVERITIES = {"low", "medium", "high"}
+
+
+def _normalize_severity(raw: str) -> str:
+    sev = str(raw).lower().strip()
+    return sev if sev in _VALID_SEVERITIES else "medium"
+
+
+def _severity_for_static_signal(signal_type: str) -> str:
+    return _STATIC_SEVERITY_BY_TYPE.get(signal_type.lower(), "medium")
+
 
 def validate_and_merge(
     signals: list[StaticSignalDict],
@@ -21,7 +37,7 @@ def validate_and_merge(
                 "file_path": str(s["location"].get("file_path", "")),
                 "line_number": line,
                 "vulnerability_type": s["type"],
-                "severity": "medium",
+                "severity": _severity_for_static_signal(s["type"]),
                 "confidence": float(s["confidence"]),
                 "source": "static",
                 "explanation": None,
@@ -37,7 +53,7 @@ def validate_and_merge(
             continue
 
         vtype = str(draft.get("type", "unknown"))
-        sev = str(draft.get("severity", "medium"))
+        sev = _normalize_severity(str(draft.get("severity", "medium")))
         expl = draft.get("explanation")
         fix = draft.get("fix")
 

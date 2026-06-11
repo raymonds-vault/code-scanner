@@ -1,6 +1,24 @@
 """Knowledge upload and ingestion schemas."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
+
+
+class KnowledgeDocumentOut(BaseModel):
+    id: str
+    source: str
+    category: str
+    doc_version: str
+    namespace: str
+    chunk_count: int
+    path: str | None
+    created_at: datetime
+
+
+class KnowledgeDocumentListResponse(BaseModel):
+    documents: list[KnowledgeDocumentOut]
+    total: int
 
 
 class KnowledgeDocumentRequest(BaseModel):

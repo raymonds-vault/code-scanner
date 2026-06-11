@@ -36,6 +36,8 @@ class LlmDraftDict(TypedDict, total=False):
     confidence: float
     explanation: str
     fix: str
+    provider: str
+    provider_fallback: bool
 
 
 class FindingDict(TypedDict):

@@ -97,9 +97,10 @@ async def persist_scan_request(
     client_request_id: str | None,
     metadata: dict,
     chunks: list[tuple],
+    user_id: str | None = None,
 ) -> str:
     scan = await scan_repo.create_scan(
-        session, metadata=metadata, client_request_id=client_request_id
+        session, metadata=metadata, client_request_id=client_request_id, user_id=user_id
     )
     await scan_repo.add_chunks(session, scan, chunks)
     await session.flush()

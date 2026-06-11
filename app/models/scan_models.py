@@ -15,6 +15,7 @@ class Scan(Base, UUIDMixin, TimestampMixin):
     progress: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
     client_request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
     chunks: Mapped[list["ScanChunk"]] = relationship(
         back_populates="scan", cascade="all, delete-orphan"

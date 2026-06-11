@@ -2,7 +2,7 @@
 
 from typing import Any, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,16 +14,52 @@ async def create_scan(
     *,
     metadata: dict[str, Any],
     client_request_id: str | None,
+    user_id: str | None = None,
 ) -> Scan:
     scan = Scan(
         status="pending",
         progress=0.0,
         metadata_json=metadata,
         client_request_id=client_request_id,
+        user_id=user_id,
     )
     session.add(scan)
     await session.flush()
     return scan
+
+
+async def list_scans_by_user(
+    session: AsyncSession, user_id: str, *, limit: int = 50, offset: int = 0
+) -> tuple[list[dict[str, Any]], int]:
+    count_q = select(func.count()).select_from(Scan).where(Scan.user_id == user_id)
+    total = (await session.execute(count_q)).scalar_one()
+
+    finding_count_sub = (
+        select(Finding.scan_id, func.count(Finding.id).label("finding_count"))
+        .group_by(Finding.scan_id)
+        .subquery()
+    )
+    q = (
+        select(Scan, func.coalesce(finding_count_sub.c.finding_count, 0).label("finding_count"))
+        .outerjoin(finding_count_sub, Scan.id == finding_count_sub.c.scan_id)
+        .where(Scan.user_id == user_id)
+        .order_by(Scan.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    rows = (await session.execute(q)).all()
+    scans = [
+        {
+            "id": row.Scan.id,
+            "status": row.Scan.status,
+            "progress": row.Scan.progress,
+            "metadata": row.Scan.metadata_json or {},
+            "created_at": row.Scan.created_at.isoformat(),
+            "finding_count": row.finding_count,
+        }
+        for row in rows
+    ]
+    return scans, total
 
 
 async def add_chunks(

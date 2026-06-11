@@ -12,7 +12,8 @@ def _settings_cache_guard():
     get_settings.cache_clear()
 
 
-def test_retrieval_uses_pinecone(monkeypatch) -> None:
+@pytest.mark.asyncio
+async def test_retrieval_uses_pinecone(monkeypatch) -> None:
     monkeypatch.setenv("PINECONE_NAMESPACE", "tests")
     get_settings.cache_clear()
 
@@ -38,13 +39,17 @@ def test_retrieval_uses_pinecone(monkeypatch) -> None:
     monkeypatch.setattr(retrieval_service, "get_pinecone_index", lambda: fake_index)
     monkeypatch.setattr("app.repositories.pinecone_repo.get_pinecone_index", lambda: fake_index)
 
-    context = retrieval_service.retrieve_for_chunk("SELECT * FROM users", signal_category="injection")
+    context = await retrieval_service.retrieve_for_chunk(
+        "SELECT * FROM users",
+        signal_category="injection",
+    )
 
     assert context["vulnerability_docs"] == ["Use parameterized queries."]
     assert context["related_patterns"] == ["guide"]
 
 
-def test_retrieval_returns_empty_when_pinecone_uninitialized(monkeypatch) -> None:
+@pytest.mark.asyncio
+async def test_retrieval_returns_empty_when_pinecone_uninitialized(monkeypatch) -> None:
     """When Pinecone isn't initialized (e.g. unit-test lifespan), retrieval is a no-op."""
 
     def _raise():
@@ -58,7 +63,10 @@ def test_retrieval_returns_empty_when_pinecone_uninitialized(monkeypatch) -> Non
         lambda text: pytest.fail("embed_one should not be called when Pinecone is uninitialized"),
     )
 
-    context = retrieval_service.retrieve_for_chunk("SELECT * FROM users", signal_category="injection")
+    context = await retrieval_service.retrieve_for_chunk(
+        "SELECT * FROM users",
+        signal_category="injection",
+    )
 
     assert context == {
         "related_patterns": [],

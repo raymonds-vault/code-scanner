@@ -5,7 +5,7 @@ Start uvicorn and wait for a debugger to attach on port 5678.
 Usage (from repo root):
   python scripts/run_with_debugpy.py
 
-Then in Cursor: Run and Debug → "Shield: Attach debugpy (port 5678)".
+Then in Cursor: Run and Debug -> "code-scanner: Attach debugpy (port 5678)".
 
 Requires: pip install -r requirements-dev.txt
 """

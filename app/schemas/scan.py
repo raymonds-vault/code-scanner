@@ -5,6 +5,20 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+class ScanSummary(BaseModel):
+    id: str
+    status: str
+    progress: float
+    finding_count: int
+    created_at: str
+    metadata: dict[str, Any]
+
+
+class ScanListResponse(BaseModel):
+    scans: list[ScanSummary]
+    total: int
+
+
 class CodeChunk(BaseModel):
     id: str
     file_path: str

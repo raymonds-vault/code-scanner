@@ -12,7 +12,7 @@ from app.services.analysis.llm_providers.common import (
 from app.services.analysis.types import ContextBundleDict, LlmDraftDict, StaticSignalDict
 
 
-def refine_inference(
+async def refine_inference(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],
@@ -33,9 +33,10 @@ def refine_inference(
             "return_full_text": False,
         },
     }
+    timeout = httpx.Timeout(connect=10.0, read=45.0, write=30.0, pool=10.0)
     try:
-        with httpx.Client(timeout=120.0) as client:
-            resp = client.post(url, headers=headers, json=payload)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
     except Exception as exc:

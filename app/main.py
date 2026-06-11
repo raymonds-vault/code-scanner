@@ -50,11 +50,13 @@ def create_app() -> FastAPI:
     )
     register_exception_handlers(app)
 
+    from app.controllers.auth_controller import router as auth_router
     from app.controllers.health_controller import router as health_router
     from app.controllers.knowledge_controller import router as knowledge_router
     from app.controllers.scan_controller import router as scan_router
 
     app.include_router(health_router)
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(knowledge_router, prefix="/api/v1")
     app.include_router(scan_router, prefix="/api/v1")
 

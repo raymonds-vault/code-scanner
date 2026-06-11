@@ -1,8 +1,8 @@
-# Shield — AI-Powered Code Security Analysis Engine
+# code-scanner - AI-Powered Code Security Analysis Engine
 
-**Version:** 0.3.0
+**Version:** 0.4.0
 
-Shield is a production-grade REST API for automated security vulnerability detection in source code. It combines deterministic static analysis with LLM-assisted refinement and Retrieval-Augmented Generation (RAG) over a security knowledge base, delivering findings with severity ratings, confidence scores, and fix suggestions in real time via WebSocket streaming.
+code-scanner is a production-grade REST API for automated security vulnerability detection in source code. It combines deterministic static analysis with LLM-assisted refinement and Retrieval-Augmented Generation (RAG) over a security knowledge base, delivering findings with severity ratings, confidence scores, and fix suggestions in real time via WebSocket streaming.
 
 ---
 
@@ -28,14 +28,14 @@ Shield is a production-grade REST API for automated security vulnerability detec
 
 ## Features
 
-- **Static analysis** — regex-based detection of SQL injection, command execution, and path traversal patterns
+- **Static analysis baseline** — regex-based detection of SQL injection, command execution, and path traversal patterns, designed to be swappable with richer analyzers
 - **Risk-gated LLM refinement** — only high-risk chunks are sent to an LLM, keeping costs low
 - **RAG-augmented context** — Pinecone vector search retrieves relevant security guidelines before each LLM call
 - **Multi-provider LLM routing** — OpenAI, Groq, Hugging Face Inference API, local transformers, and a deterministic stub; configurable fallback chain
 - **Real-time streaming** — WebSocket endpoint pushes incremental findings as analysis progresses
 - **Knowledge ingestion** — REST endpoints and a script to load security corpus documents into Pinecone
-- **Secret redaction** — API keys and tokens stripped from code before embedding or LLM submission
-- **Async-first** — asyncpg, SQLAlchemy async, concurrent LLM calls
+- **Secret redaction** — keys, tokens, AWS credentials, private key blocks, and connection-string passwords are stripped before embedding or LLM submission
+- **Async-first** — asyncpg + SQLAlchemy async, async network model calls, and thread-offloaded CPU-bound embedding/local inference
 - **TypeScript CLI** — thin Node.js client for submitting local files and streaming results
 
 ---
@@ -108,7 +108,7 @@ Shield is a production-grade REST API for automated security vulnerability detec
 ## Project Structure
 
 ```
-shield/
+code-scanner/
 ├── app/
 │   ├── main.py                          # FastAPI app factory + lifespan
 │   ├── core/
@@ -193,7 +193,7 @@ normalize → static → risk_select → rag_llm → validate_aggregate
 Initialises `AnalysisState`, emits a `progress` WebSocket event.
 
 ### 2. `static`
-Runs regex patterns on every chunk:
+Runs baseline regex patterns on every chunk (replaceable with a stronger analyzer):
 
 | Pattern | Detects |
 |---|---|
@@ -457,7 +457,7 @@ All settings are read from environment variables (or `.env`). Copy `.env.example
 
 ```bash
 # 1. Clone and enter the repo
-git clone <repo-url> shield && cd shield
+git clone <repo-url> code-scanner && cd code-scanner
 
 # 2. Copy and configure environment
 cp .env.example .env
@@ -474,7 +474,7 @@ Services started:
 
 | Service | Host port | Description |
 |---|---|---|
-| `api` | 8000 | Shield FastAPI app |
+| `api` | 8000 | code-scanner FastAPI app |
 | `postgres` | 5433 | PostgreSQL 16 |
 | `redis` | 6380 | Redis 7 |
 | `qdrant` | 6333 / 6334 | Qdrant (legacy; not used by app) |
@@ -566,7 +566,7 @@ node dist/scan.js <path-to-file-or-directory> [api-base-url]
 
 # Default api-base-url is http://localhost:8000
 node dist/scan.js ./src
-node dist/scan.js ./src https://my-shield-instance.example.com
+node dist/scan.js ./src https://my-code-scanner-instance.example.com
 ```
 
 The CLI discovers all source files (skipping `.git`, `node_modules`, and binaries), submits them in a single scan request, then streams WebSocket events to stdout until the scan completes.
@@ -650,6 +650,13 @@ python3 -m pytest tests/ --cov=app --cov-report=term-missing
 ---
 
 ## Changelog
+
+### v0.4.0
+- Converted the LLM/RAG execution path to true async where network I/O is involved and offloaded CPU-bound retrieval/model tasks to threads.
+- Added provider fallback sanitization so internal provider/API error details are logged server-side but not leaked in finding explanations.
+- Improved finding quality with static severity mapping and stronger deduplication that preserves highest-severity/highest-confidence findings.
+- Expanded secret redaction coverage (AWS keys, PEM private keys, and connection-string credentials).
+- Added CI workflow for pytest + ruff and conditional UI/CLI build checks.
 
 ### v0.3.0
 - Removed Qdrant entirely; committed exclusively to Pinecone as the vector store

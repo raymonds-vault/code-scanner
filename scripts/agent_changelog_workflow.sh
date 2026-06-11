@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Shield — agent / developer workflow: changelog + version.properties
+# code-scanner - agent / developer workflow: changelog + version.properties
 # Cursor: see .cursor/rules/changelog-and-version.mdc (always applied).
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "=== Shield: changelog + version workflow ==="
+echo "=== code-scanner: changelog + version workflow ==="
 echo ""
 echo "After substantive code or config changes, the agent (or you) must:"
 echo ""

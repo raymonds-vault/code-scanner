@@ -125,8 +125,8 @@ async def node_rag_llm(state: AnalysisState, config: RunnableConfig) -> dict[str
             ch = chunk_by_id[cid]
             red = redact_code(ch["code"])
             sigs = [s for s in state.get("static_signals", []) if s["chunk_client_id"] == cid]
-            ctx = retrieve_for_chunk(red, signal_category=None)
-            draft = refine_chunk(cid, red, sigs, ctx)
+            ctx = await retrieve_for_chunk(red, signal_category=None)
+            draft = await refine_chunk(cid, red, sigs, ctx)
             llm_out[cid] = draft
 
     await asyncio.gather(*(one(cid) for cid in state.get("chunks_for_llm", [])))

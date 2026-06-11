@@ -3,7 +3,7 @@
 from app.services.analysis.types import ContextBundleDict, LlmDraftDict, StaticSignalDict
 
 
-def refine(
+async def refine(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],

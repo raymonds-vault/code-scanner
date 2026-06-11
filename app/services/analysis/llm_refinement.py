@@ -4,10 +4,10 @@ from app.services.analysis.llm_providers.router import refine_with_router
 from app.services.analysis.types import ContextBundleDict, LlmDraftDict, StaticSignalDict
 
 
-def refine_chunk(
+async def refine_chunk(
     chunk_id: str,
     redacted_code: str,
     signals: list[StaticSignalDict],
     context: ContextBundleDict,
 ) -> LlmDraftDict:
-    return refine_with_router(chunk_id, redacted_code, signals, context)
+    return await refine_with_router(chunk_id, redacted_code, signals, context)

@@ -10,7 +10,7 @@ import pytest
 
 def pytest_configure(config: pytest.Config) -> None:
     tmp = Path(tempfile.mkdtemp(prefix="shield_test_"))
-    db_path = tmp / "shield.db"
+    db_path = tmp / "code_scanner.db"
     os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
     os.environ["REDIS_ENABLED"] = "false"
     os.environ["LLM_BACKEND"] = "stub"
